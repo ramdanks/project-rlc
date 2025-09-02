@@ -1,0 +1,101 @@
+version: "3"
+
+tasks:  
+    clean:
+        desc: "Remove all .build and .install folders"
+        cmds:
+            - cmd: cmd /C "if exist .build rmdir /S /Q .build"
+              platforms: [windows]
+            - cmd: cmd /C "if exist .install rmdir /S /Q .install"
+              platforms: [windows]
+            - cmd: rm -rf .build .install
+              platforms: [linux, darwin]
+
+    fetch:
+        desc: "Clone required dependencies"
+        vars:
+            LG: https://github.com/LuaJIT/LuaJIT.git
+            RG: https://github.com/raysan5/raylib.git
+            LT: dependencies/luajit
+            RT: dependencies/raylib
+        cmds:
+            - git clone --branch v2.1 {{.LG}} {{.LT}}
+            - git clone --branch 5.5 --depth 1 {{.RG}} {{.RT}}
+
+    br:
+        desc: "Build, install, then run app"
+        deps: [build:app]
+        cmd: task run
+    
+    build:app:
+        aliases:
+          - build
+        desc: "Build and install this project"
+        vars:
+            B: '.build/app'
+        cmd: cmake --build {{.B}} --target install
+
+    build:luajit:
+        desc: "Build and install LuaJIT dependencies"
+        vars:
+            B: '.build/luajit'
+        cmd: cmake --build {{.B}} --target install
+
+    build:raylib:
+        desc: "Build and install Raylib dependencies"
+        vars:
+            B: '.build/raylib'
+        cmd: cmake --build {{.B}} --target install
+
+    configure:app:
+        desc: "Configure CMake this project"
+        vars:
+            B: '.build/app'
+            S: '.'
+            I: '.install/app'
+        cmds:
+            - cmake -B {{.B}} -S {{.S}}
+              -DCMAKE_INSTALL_PREFIX={{.I}}
+
+    configure:luajit:
+        desc: "Configure CMake for LuaJIT dependencies"
+        vars:
+            B: '.build/luajit'
+            S: 'cmake/luajit'
+            I: '.install/luajit'
+        cmds:
+            - cmake -B {{.B}} -S {{.S}}
+              -DCMAKE_INSTALL_PREFIX={{.I}}
+    
+    configure:raylib:
+        desc: "Configure CMake for Raylib dependencies"
+        vars:
+            B: '.build/raylib'
+            S: 'dependencies/raylib'
+            I: '.install/raylib'
+        cmds:
+            - cmake -B {{.B}} -S {{.S}}
+              -DCMAKE_INSTALL_PREFIX={{.I}}
+              -DBUILD_SHARED_LIBS=ON
+              -DBUILD_EXAMPLES=OFF
+              -DENABLE_ASAN=OFF
+              -DENABLE_UBSAN=OFF
+              -DENABLE_MSAN=OFF
+    
+    compile:
+        desc: "Configure, build, and install project and dependencies"
+        deps: [configure:luajit, configure:raylib, configure:app]
+        cmds:
+            - task build:luajit
+            - task build:raylib
+            - task build:app
+
+    run:app:
+        aliases:
+          - run
+        desc: "Run app from default install target"
+        cmds:
+            - cmd: ./.install/app/bin/app.exe
+              platforms: [windows]
+            - cmd: ./.install/app/bin/app
+              platforms: [linux, darwin]
