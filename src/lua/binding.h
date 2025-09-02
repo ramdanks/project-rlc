@@ -95,7 +95,7 @@ typedef struct
  */
 typedef struct
 {
-    lua_bind_array_storage_t* data;
+    lua_bind_array_storage_t data;
 } lua_module_entity_t;
 
 /**
@@ -123,6 +123,8 @@ int lua_bind_integer(lua_State *L, int* w);
 int lua_bind_entity(lua_State *L, lua_entity_t *w);
 
 int lua_bind_module_entity(lua_State *L, lua_module_entity_t *w);
+
+void lua_free_array_storage(lua_bind_array_storage_t* s);
 
 void lua_free_module_entity(lua_module_entity_t *w);
 

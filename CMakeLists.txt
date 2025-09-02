@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(MyProject C)
+project(Application C)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -18,40 +18,66 @@ set(LUAJIT_DIR ${PROJECT_SOURCE_DIR}/.install/luajit)
 include_directories(${RAYLIB_DIR}/include)
 include_directories(${LUAJIT_DIR}/include)
 
-# Dependencies linking directories.
-link_directories(${RAYLIB_DIR}/lib)
-link_directories(${LUAJIT_DIR}/lib)
-
 # Build executables from all .c files.
 file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/src/*.c")
-add_executable(app ${SOURCES})
 
-# Build your executable and link the libs.
-target_link_libraries(app PRIVATE raylib)
-target_link_libraries(app PRIVATE lua51)
+# Define application executable, it's properties, and linking.
+if(APPLE)
+    add_executable(app MACOSX_BUNDLE ${SOURCES})
 
-# Target install configuration
-install(TARGETS app RUNTIME DESTINATION bin)
-install(DIRECTORY content/ DESTINATION content)
+    set_target_properties(app PROPERTIES
+        BUILD_RPATH   "@executable_path/../Frameworks"
+        INSTALL_RPATH "@executable_path/../Frameworks"
+        MACOSX_RPATH  ON
 
-# Copy dynamic link library.
-if(MSVC)
-    install(FILES
-        "${RAYLIB_DIR}/bin/raylib.dll"
-        DESTINATION bin
+        OUTPUT_NAME                        "Application"
+        MACOSX_BUNDLE_BUNDLE_NAME          "Application"
+        MACOSX_BUNDLE_GUI_IDENTIFIER       "com.example.application"
+        MACOSX_BUNDLE_INFO_STRING          "Prototype of PROJECT-RLC"
+        MACOSX_BUNDLE_ICON_FILE            "AppIcon.icns"
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+        MACOSX_BUNDLE_BUNDLE_VERSION       "1"
     )
 
-    install(FILES
-        "${LUAJIT_DIR}/bin/lua51.dll"
-        DESTINATION bin
+    find_library(RAYLIB_LIB raylib     PATHS ${RAYLIB_DIR}/lib NO_DEFAULT_PATH)
+    find_library(LUAJIT_LIB luajit-5.1 PATHS ${LUAJIT_DIR}/lib NO_DEFAULT_PATH)
+
+    target_link_libraries(app PRIVATE ${RAYLIB_LIB} ${LUAJIT_LIB})
+
+    install(TARGETS app
+        BUNDLE  DESTINATION .
+        RUNTIME DESTINATION bin
     )
+
+    file(GLOB RAYLIB_DYLIBS "${RAYLIB_DIR}/lib/*.dylib")
+    file(GLOB LUAJIT_DYLIBS "${LUAJIT_DIR}/lib/*.dylib")
+
+    install(
+        FILES ${RAYLIB_DYLIBS} ${LUAJIT_DYLIBS}
+        DESTINATION "$<TARGET_BUNDLE_DIR_NAME:app>/Contents/Frameworks"
+    )
+
+    install(
+        DIRECTORY content/
+        DESTINATION "$<TARGET_BUNDLE_DIR_NAME:app>/Contents/Resources/content"
+    )
+
+elseif(WIN32)
+    add_executable(app WIN32_EXECUTABLE ${SOURCES})
+
+    target_link_libraries(app PRIVATE raylib lua51)
+
+    install(TARGETS app RUNTIME DESTINATION bin)
+    install(FILES "${RAYLIB_DIR}/bin/raylib.dll" DESTINATION bin)
+    install(FILES "${LUAJIT_DIR}/bin/lua51.dll"  DESTINATION bin)
+    install(DIRECTORY content/ DESTINATION content)
+
+else()
+    message(FATAL_ERROR "Not supported on this platform.")
+
 endif()
 
-
-# Target install extra for debug
+# Installation for debug symbols.
 if(MSVC)
-    install(FILES "$<TARGET_PDB_FILE:app>"
-        DESTINATION bin
-        CONFIGURATIONS Debug
-    )
+    install(FILES "$<TARGET_PDB_FILE:app>" DESTINATION bin CONFIGURATIONS Debug)
 endif()

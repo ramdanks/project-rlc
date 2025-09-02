@@ -98,8 +98,8 @@ int lua_bind_entity(lua_State *L, lua_entity_t *w)
         .s_count = s_count,
         .a_fields = NULL,
         .s_fields = (lua_bind_scalar_field_t[s_count]){
-            {"name" , &w->name , lua_bind_string },
-            {"value", &w->value, lua_bind_integer},
+            {"name" , &w->name , (lua_bind_fn)lua_bind_string },
+            {"value", &w->value, (lua_bind_fn)lua_bind_integer},
         },
     };
     return lua_bind_class(L, arg);
@@ -112,15 +112,22 @@ int lua_bind_module_entity(lua_State *L, lua_module_entity_t *w)
         .a_count = a_count,
         .s_count = s_count,
         .a_fields = (lua_bind_array_field_t[a_count]){
-            {"data", &w->data, lua_bind_entity, sizeof(lua_entity_t)},
+            {"data", &w->data, (lua_bind_fn)lua_bind_entity, sizeof(lua_entity_t)},
         },
         .s_fields = NULL,
     };
     return lua_bind_class(L, arg);
 }
 
+void lua_free_array_storage(lua_bind_array_storage_t *s)
+{
+    free(s->data);
+    s->data       = NULL;
+    s->data_count = 0;
+    s->data_size  = 0;
+}
+
 void lua_free_module_entity(lua_module_entity_t *w)
 {
-    free(w->data);
-    w->data       = NULL;
+    lua_free_array_storage(&w->data);
 }

@@ -1,5 +1,14 @@
 version: "3"
 
+vars:
+    CMAKE_APP_BD    : .build/app
+    CMAKE_RAYLIB_BD : .build/raylib
+    CMAKE_APP_IP    : .install/app
+    CMAKE_LUAJIT_IP : .install/luajit
+    CMAKE_RAYLIB_IP : .install/raylib
+    LUAJIT_DD       : dependencies/luajit
+    RAYLIB_DD       : dependencies/raylib
+
 tasks:  
     clean:
         desc: "Remove all .build and .install folders"
@@ -14,13 +23,11 @@ tasks:
     fetch:
         desc: "Clone required dependencies"
         vars:
-            LG: https://github.com/LuaJIT/LuaJIT.git
-            RG: https://github.com/raysan5/raylib.git
-            LT: dependencies/luajit
-            RT: dependencies/raylib
+            LUAJIT_GIT: https://github.com/LuaJIT/LuaJIT.git
+            RAYLIB_GIT: https://github.com/raysan5/raylib.git
         cmds:
-            - git clone --branch v2.1 {{.LG}} {{.LT}}
-            - git clone --branch 5.5 --depth 1 {{.RG}} {{.RT}}
+            - git clone --branch v2.1 {{.LUAJIT_GIT}} {{.LUAJIT_DD}}
+            - git clone --branch 5.5 --depth 1 {{.RAYLIB_GIT}} {{.RAYLIB_DD}}
 
     br:
         desc: "Build, install, then run app"
@@ -31,51 +38,37 @@ tasks:
         aliases:
           - build
         desc: "Build and install this project"
-        vars:
-            B: '.build/app'
-        cmd: cmake --build {{.B}} --target install
+        cmd: cmake --build {{.CMAKE_APP_BD}} --target install
 
     build:luajit:
         desc: "Build and install LuaJIT dependencies"
         vars:
-            B: '.build/luajit'
-        cmd: cmake --build {{.B}} --target install
+            PREF: '{{.ROOT_DIR}}/{{.CMAKE_LUAJIT_IP}}'
+            IINC: '{{.ROOT_DIR}}/{{.CMAKE_LUAJIT_IP}}/include'
+        dir: dependencies/luajit
+        env:
+            MACOSX_DEPLOYMENT_TARGET: 10.14
+        cmds:
+            - cmd: make CC=clang BUILDMODE=dynamic TARGET_LIBPATH=@rpath
+              platforms: [darwin]
+            - cmd: make PREFIX={{.PREF}} INSTALL_INC={{.IINC}} install
+              platforms: [darwin]
 
     build:raylib:
         desc: "Build and install Raylib dependencies"
-        vars:
-            B: '.build/raylib'
-        cmd: cmake --build {{.B}} --target install
+        cmd: cmake --build {{.CMAKE_RAYLIB_BD}} --target install
 
     configure:app:
         desc: "Configure CMake this project"
-        vars:
-            B: '.build/app'
-            S: '.'
-            I: '.install/app'
         cmds:
-            - cmake -B {{.B}} -S {{.S}}
-              -DCMAKE_INSTALL_PREFIX={{.I}}
-
-    configure:luajit:
-        desc: "Configure CMake for LuaJIT dependencies"
-        vars:
-            B: '.build/luajit'
-            S: 'cmake/luajit'
-            I: '.install/luajit'
-        cmds:
-            - cmake -B {{.B}} -S {{.S}}
-              -DCMAKE_INSTALL_PREFIX={{.I}}
+            - cmake -B {{.CMAKE_APP_BD}} -S .
+              -DCMAKE_INSTALL_PREFIX={{.CMAKE_APP_IP}}
     
     configure:raylib:
         desc: "Configure CMake for Raylib dependencies"
-        vars:
-            B: '.build/raylib'
-            S: 'dependencies/raylib'
-            I: '.install/raylib'
         cmds:
-            - cmake -B {{.B}} -S {{.S}}
-              -DCMAKE_INSTALL_PREFIX={{.I}}
+            - cmake -B {{.CMAKE_RAYLIB_BD}} -S {{.RAYLIB_DD}}
+              -DCMAKE_INSTALL_PREFIX={{.CMAKE_RAYLIB_IP}}
               -DBUILD_SHARED_LIBS=ON
               -DBUILD_EXAMPLES=OFF
               -DENABLE_ASAN=OFF
@@ -84,10 +77,10 @@ tasks:
     
     compile:
         desc: "Configure, build, and install project and dependencies"
-        deps: [configure:luajit, configure:raylib, configure:app]
+        deps: [build:luajit, configure:raylib]
         cmds:
-            - task build:luajit
             - task build:raylib
+            - task configure:app
             - task build:app
 
     run:app:
@@ -98,4 +91,6 @@ tasks:
             - cmd: ./.install/app/bin/app.exe
               platforms: [windows]
             - cmd: ./.install/app/bin/app
-              platforms: [linux, darwin]
+              platforms: [linux]
+            - cmd: ./.install/app/Application.app/Contents/MacOS/Application
+              platforms: [darwin]

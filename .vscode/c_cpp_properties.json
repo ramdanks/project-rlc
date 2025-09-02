@@ -2,9 +2,18 @@
     "version": 4,
     "configurations": [
         {
-            "name": "Raylib",
+            "name": "msvc-x64",
             "cStandard": "c17",
             "intelliSenseMode": "msvc-x64",
+            "includePath": [
+                "${workspaceFolder}/.install/luajit/include",
+                "${workspaceFolder}/.install/raylib/include"
+            ]
+        },
+        {
+            "name": "clang-arm64",
+            "cStandard": "c17",
+            "intelliSenseMode": "clang-arm64",
             "includePath": [
                 "${workspaceFolder}/.install/luajit/include",
                 "${workspaceFolder}/.install/raylib/include"
