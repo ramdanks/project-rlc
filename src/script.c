@@ -5,6 +5,7 @@
 #include <lualib.h>
 
 #include "content.h"
+#include "lua/vector.h"
 #include "script/entity.h"
 
 int script_new_state(script_state_t* s)
@@ -28,10 +29,11 @@ void script_load_entity(script_state_t* s)
 
     script_module_entity_t m;
     script_bind_module_entity(s->L, &m);
-
-    lua_iterator_t it = lua_vector_iterator(&m.data);
-    for (script_entity_t* e; lua_iterator_next(&it, &e);)
+    for (size_t i = 0; i < m.data.count; ++i)
+    {
+        script_entity_t* e = lua_vector_read(&m.data, i);
         fprintf(stdout, "%s: %d\n", e->name, e->value);
+    }
 
     script_free_module_entity(&m);
 }

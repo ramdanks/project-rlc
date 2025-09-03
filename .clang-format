@@ -1,5 +1,3 @@
-BasedOnStyle: Google
-
 LineEnding: LF
 ColumnLimit: 80
 IndentWidth: 4

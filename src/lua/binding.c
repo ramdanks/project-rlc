@@ -14,19 +14,21 @@ int lua_bind_vector(lua_State* L, lua_bind_vector_t arg)
         return LUA_BIND_EINVAL;
 
     const size_t n = lua_objlen(L, index);
-    *arg.data      = NULL;
-    *arg.count     = n;
-    *arg.size      = n * arg.elem_size;
+    const size_t s = n * arg.elem_size;
+
+    arg.vector->data  = NULL;
+    arg.vector->count = n;
+    arg.vector->step  = arg.elem_size;
 
     if (n == 0)
         return LUA_BIND_OK;
 
-    *arg.data = malloc(*arg.size);
-    if (*arg.data == NULL)
+    arg.vector->data = malloc(s);
+    if (arg.vector->data == NULL)
         return LUA_BIND_MALLOC_FAIL;
 
-    char* w    = (char*) (*arg.data);
-    char* wend = w + *arg.size;
+    char* w    = (char*) (arg.vector->data);
+    char* wend = w + s;
 
     for (int i = 1; w < wend; w += arg.elem_size, i++)
     {
@@ -58,14 +60,12 @@ int lua_bind_class(lua_State* L, lua_bind_class_t arg)
 
     for (size_t i = 0; i < arg.vector.count; ++i)
     {
-        const vector_field_t f   = arg.vector.fields[i];
-        const vector_t       arg = {
-                  .binding   = f.binding,
-                  .elem_size = f.size,
-                  .data      = &f.buf->data,
-                  .count     = &f.buf->count,
-                  .size      = &f.buf->size,
-        };
+        lua_bind_vector_field_t f = arg.vector.fields[i];
+
+        lua_bind_vector_t arg;
+        arg.binding   = f.binding;
+        arg.elem_size = f.size;
+        arg.vector    = f.buf;
 
         lua_getfield(L, -1, f.key);
         lua_bind_vector(L, arg);

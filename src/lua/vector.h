@@ -1,33 +1,53 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
-#include <stdbool.h>
+#include <stdlib.h>
+
+#include "com/iterator.h"
 
 typedef struct {
-    void             *cursor;
-    const void *const endpos;
-    const size_t      step;
-} lua_iterator_t;
-
-/**
- * @brief Iterator for loop condition and element retrieval.
- */
-bool lua_iterator_next(lua_iterator_t *it, void **w);
-
-typedef struct {
-    void  *data;
-    size_t size;
+    void*  data;
+    size_t step;
     size_t count;
-} lua_vector_storage_t;
+} lua_vector_t;
 
 /**
  * @brief Free a vector storage allocated by @p lua_bind_vector.
  */
-void lua_free_vector_storage(lua_vector_storage_t *s);
+inline void lua_free_vector(lua_vector_t* s)
+{
+    free(s->data);
+    s->data  = NULL;
+    s->step  = 0;
+    s->count = 0;
+}
+
+/**
+ * @brief Returns the vector size in bytes.
+ */
+inline size_t lua_vector_size(const lua_vector_t* s)
+{
+    return s->step * s->count;
+}
 
 /**
  * @brief Create an iterator using vector.
  */
-lua_iterator_t lua_vector_iterator(const lua_vector_storage_t *s);
+inline iterator_t lua_vector_iterator(const lua_vector_t* s,
+                                      iterator_range_t*   buf)
+{
+    buf->step   = s->step;
+    buf->cursor = (char*) s->data;
+    buf->endpos = (char*) s->data + lua_vector_size(s);
+    return make_iterator_range(buf);
+}
+
+/**
+ * @brief Access vector element specified by index.
+ */
+inline void* lua_vector_read(const lua_vector_t* s, size_t index)
+{
+    return (char*) s->data + (s->step * index);
+}
 
 #endif
