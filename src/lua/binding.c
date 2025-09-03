@@ -4,8 +4,6 @@
 #include <lualib.h>
 #include <stdlib.h>
 
-#include "truncate.h"
-
 int lua_bind_vector(lua_State* L, lua_bind_vector_t arg)
 {
     const int index = -1;
@@ -51,7 +49,7 @@ int lua_bind_class(lua_State* L, lua_bind_class_t arg)
     {
         const char* key = arg.scalar.fields[i].key;
         void*       buf = arg.scalar.fields[i].buf;
-        bind_fn     bfn = arg.scalar.fields[i].binding;
+        lua_bind_fn bfn = arg.scalar.fields[i].binding;
 
         lua_getfield(L, -1, key);
         bfn(L, buf);

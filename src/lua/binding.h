@@ -51,16 +51,16 @@ typedef struct {
 typedef struct {
     const size_t                   count;
     const lua_bind_scalar_field_t* fields;
-} lua_bind_scalar_field_arg_t;
+} lua_bind_class_scalar_t;
 
 typedef struct {
     const size_t                   count;
     const lua_bind_vector_field_t* fields;
-} lua_bind_vector_field_arg_t;
+} lua_bind_class_vector_t;
 
 typedef struct {
-    lua_bind_scalar_field_arg_t scalar;
-    lua_bind_vector_field_arg_t vector;
+    lua_bind_class_scalar_t scalar;
+    lua_bind_class_vector_t vector;
 } lua_bind_class_t;
 
 /**
