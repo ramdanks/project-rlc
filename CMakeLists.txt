@@ -14,10 +14,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(RAYLIB_DIR ${PROJECT_SOURCE_DIR}/.install/raylib)
 set(LUAJIT_DIR ${PROJECT_SOURCE_DIR}/.install/luajit)
 
-# Dependencies include directories.
-include_directories(${RAYLIB_DIR}/include)
-include_directories(${LUAJIT_DIR}/include)
-
 # Build executables from all .c files.
 file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/src/*.c")
 
@@ -63,9 +59,12 @@ if(APPLE)
     )
 
 elseif(WIN32)
-    add_executable(app WIN32_EXECUTABLE ${SOURCES})
+    add_executable(app ${SOURCES})
 
-    target_link_libraries(app PRIVATE raylib lua51)
+    find_library(RAYLIB_LIB raylib PATHS ${RAYLIB_DIR}/lib NO_DEFAULT_PATH)
+    find_library(LUAJIT_LIB lua51  PATHS ${LUAJIT_DIR}/lib NO_DEFAULT_PATH)
+
+    target_link_libraries(app PRIVATE ${RAYLIB_LIB} ${LUAJIT_LIB})
 
     install(TARGETS app RUNTIME DESTINATION bin)
     install(FILES "${RAYLIB_DIR}/bin/raylib.dll" DESTINATION bin)
@@ -77,7 +76,17 @@ else()
 
 endif()
 
-# Installation for debug symbols.
+# Dependencies include directories.
+target_include_directories(app PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${RAYLIB_DIR}/include
+    ${LUAJIT_DIR}/include
+)
+
+# Compiler specific options.
 if(MSVC)
+    add_compile_options(/MP)
+    add_compile_options(/W4 /permissive-)
+
     install(FILES "$<TARGET_PDB_FILE:app>" DESTINATION bin CONFIGURATIONS Debug)
 endif()

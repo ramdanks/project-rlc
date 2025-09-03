@@ -1,24 +1,158 @@
 version: "3"
 
 vars:
-    CMAKE_APP_BD    : .build/app
-    CMAKE_RAYLIB_BD : .build/raylib
-    CMAKE_APP_IP    : .install/app
-    CMAKE_LUAJIT_IP : .install/luajit
-    CMAKE_RAYLIB_IP : .install/raylib
-    LUAJIT_DD       : dependencies/luajit
-    RAYLIB_DD       : dependencies/raylib
+    CMAKE_APP_BD: .build/app
+    CMAKE_RAYLIB_BD: .build/raylib
+    APP_IP: .install/app
+    LUAJIT_IP: .install/luajit
+    RAYLIB_IP: .install/raylib
+    LUAJIT_DD: dependencies/luajit
+    RAYLIB_DD: dependencies/raylib
 
-tasks:  
-    clean:
+tasks:
+    go:
+        desc: "Build, install, then run app"
+        deps: [build:app]
+        cmds:
+            - task run:app
+
+    build:app:
+        aliases: [build]
+        desc: "Build and install this project"
+        cmds:
+            - cmake --build {{.CMAKE_APP_BD}} --target install
+
+    build:luajit:
+        desc: "Build and install LuaJIT dependencies"
+        deps:
+            - build:luajit:{{OS}}
+
+    build:luajit:darwin:
+        platforms: [darwin]
+        desc: "Build and install LuaJIT dependencies"
+        vars:
+            PREF: "{{.ROOT_DIR}}/{{.LUAJIT_IP}}"
+            IINC: "{{.ROOT_DIR}}/{{.LUAJIT_IP}}/include"
+        dir: "{{.LUAJIT_DD}}"
+        env:
+            MACOSX_DEPLOYMENT_TARGET: 10.14
+        cmds:
+            - make CC=clang BUILDMODE=dynamic TARGET_LIBPATH=@rpath
+            - make PREFIX={{.PREF}} INSTALL_INC={{.IINC}} install
+
+    build:luajit:windows:
+        platforms: [windows]
+        desc: "Build and install LuaJIT dependencies"
+        cmds:
+            - cd {{.LUAJIT_DD}}/src && msvcbuild.bat
+            - powershell -Command "
+              New-Item -ItemType Directory -Path        '{{.LUAJIT_IP}}/bin'     -Force;
+              New-Item -ItemType Directory -Path        '{{.LUAJIT_IP}}/lib'     -Force;
+              New-Item -ItemType Directory -Path        '{{.LUAJIT_IP}}/include' -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/luajit.exe' '{{.LUAJIT_IP}}/bin'     -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/lua51.dll'  '{{.LUAJIT_IP}}/bin'     -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/lua51.lib'  '{{.LUAJIT_IP}}/lib'     -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/lua.h'      '{{.LUAJIT_IP}}/include' -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/luaconf.h'  '{{.LUAJIT_IP}}/include' -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/luajit.h'   '{{.LUAJIT_IP}}/include' -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/lauxlib.h'  '{{.LUAJIT_IP}}/include' -Force;
+              Copy-Item '{{.LUAJIT_DD}}/src/lualib.h'   '{{.LUAJIT_IP}}/include' -Force;"
+
+    build:raylib:
+        desc: "Build and install Raylib dependencies"
+        cmds:
+            - cmake --build {{.CMAKE_RAYLIB_BD}} --target install
+
+    clean:app:
+        aliases: [clean]
+        platforms: [darwin, linux, windows]
+        desc: "Remove .build and .install folder for app project"
+        vars:
+            D1: "{{.CMAKE_APP_BD}}"
+            D2: "{{.APP_IP}}"
+        cmds:
+            - cmd: rm -rf {{.D1}} {{.D2}}
+              platforms: [darwin, linux]
+            - cmd: powershell -Command "
+                  if (Test-Path '{{.D1}}') { Remove-Item -Recurse -Force '{{.D1}}' };
+                  if (Test-Path '{{.D2}}') { Remove-Item -Recurse -Force '{{.D2}}' }"
+              platforms: [windows]
+
+    clean:raylib:
+        platforms: [darwin, linux, windows]
+        desc: "Remove .build and .install folder for Raylib project"
+        vars:
+            D1: "{{.CMAKE_RAYLIB_BD}}"
+            D2: "{{.RAYLIB_IP}}"
+        cmds:
+            - cmd: rm -rf {{.D1}} {{.D2}}
+              platforms: [darwin, linux]
+            - cmd: powershell -Command "
+                  if (Test-Path '{{.D1}}') { Remove-Item -Recurse -Force '{{.D1}}' };
+                  if (Test-Path '{{.D2}}') { Remove-Item -Recurse -Force '{{.D2}}' }"
+              platforms: [windows]
+
+    clean:luajit:
+        platforms: [darwin, linux, windows]
+        desc: "Remove .install folders for LuaJIT project"
+        vars:
+            D1: "{{.LUAJIT_IP}}"
+        cmds:
+            - cmd: rm -rf {{.D1}}
+              platforms: [darwin, linux]
+            - cmd: powershell -Command "
+                  if (Test-Path '{{.D1}}') { Remove-Item -Recurse -Force '{{.D1}}' }"
+              platforms: [windows]
+
+    clean:all:
+        platforms: [darwin, linux, windows]
         desc: "Remove all .build and .install folders"
         cmds:
-            - cmd: cmd /C "if exist .build rmdir /S /Q .build"
-              platforms: [windows]
-            - cmd: cmd /C "if exist .install rmdir /S /Q .install"
-              platforms: [windows]
             - cmd: rm -rf .build .install
-              platforms: [linux, darwin]
+              platforms: [darwin, linux]
+            - cmd: cmd /C "exit 0 &&
+                  if exist .build   rmdir /S /Q .build &&
+                  if exist .install rmdir /S /Q .install"
+              platforms: [windows]
+
+    compile:
+        desc: "Configure, build, and install project and dependencies"
+        deps: [build:luajit, configure:raylib]
+        cmds:
+            - task build:raylib
+            - task configure:app
+            - task build:app
+
+    configure:app:auto:
+        aliases:
+            - configure:app
+        desc: "Configure CMake this project"
+        cmds:
+            - cmake
+              -B {{.CMAKE_APP_BD}}
+              -S .
+              -DCMAKE_INSTALL_PREFIX={{.APP_IP}}
+
+    configure:app:ninja:
+        desc: "Configure CMake this project"
+        cmds:
+            - cmake
+              -G "Ninja"
+              -B {{.CMAKE_APP_BD}}
+              -S .
+              -DCMAKE_INSTALL_PREFIX={{.APP_IP}}
+              -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+    configure:raylib:
+        desc: "Configure CMake for Raylib dependency"
+        cmds:
+            - cmake -B {{.CMAKE_RAYLIB_BD}} -S {{.RAYLIB_DD}}
+              -DCMAKE_INSTALL_PREFIX={{.RAYLIB_IP}}
+              -DBUILD_SHARED_LIBS=ON
+              -DBUILD_EXAMPLES=OFF
+              -DENABLE_ASAN=OFF
+              -DENABLE_UBSAN=OFF
+              -DENABLE_MSAN=OFF
 
     fetch:
         desc: "Clone required dependencies"
@@ -29,68 +163,22 @@ tasks:
             - git clone --branch v2.1 {{.LUAJIT_GIT}} {{.LUAJIT_DD}}
             - git clone --branch 5.5 --depth 1 {{.RAYLIB_GIT}} {{.RAYLIB_DD}}
 
-    br:
-        desc: "Build, install, then run app"
-        deps: [build:app]
-        cmd: task run
-    
-    build:app:
-        aliases:
-          - build
-        desc: "Build and install this project"
-        cmd: cmake --build {{.CMAKE_APP_BD}} --target install
-
-    build:luajit:
-        desc: "Build and install LuaJIT dependencies"
-        vars:
-            PREF: '{{.ROOT_DIR}}/{{.CMAKE_LUAJIT_IP}}'
-            IINC: '{{.ROOT_DIR}}/{{.CMAKE_LUAJIT_IP}}/include'
-        dir: dependencies/luajit
-        env:
-            MACOSX_DEPLOYMENT_TARGET: 10.14
-        cmds:
-            - cmd: make CC=clang BUILDMODE=dynamic TARGET_LIBPATH=@rpath
-              platforms: [darwin]
-            - cmd: make PREFIX={{.PREF}} INSTALL_INC={{.IINC}} install
-              platforms: [darwin]
-
-    build:raylib:
-        desc: "Build and install Raylib dependencies"
-        cmd: cmake --build {{.CMAKE_RAYLIB_BD}} --target install
-
-    configure:app:
-        desc: "Configure CMake this project"
-        cmds:
-            - cmake -B {{.CMAKE_APP_BD}} -S .
-              -DCMAKE_INSTALL_PREFIX={{.CMAKE_APP_IP}}
-    
-    configure:raylib:
-        desc: "Configure CMake for Raylib dependencies"
-        cmds:
-            - cmake -B {{.CMAKE_RAYLIB_BD}} -S {{.RAYLIB_DD}}
-              -DCMAKE_INSTALL_PREFIX={{.CMAKE_RAYLIB_IP}}
-              -DBUILD_SHARED_LIBS=ON
-              -DBUILD_EXAMPLES=OFF
-              -DENABLE_ASAN=OFF
-              -DENABLE_UBSAN=OFF
-              -DENABLE_MSAN=OFF
-    
-    compile:
-        desc: "Configure, build, and install project and dependencies"
-        deps: [build:luajit, configure:raylib]
-        cmds:
-            - task build:raylib
-            - task configure:app
-            - task build:app
-
     run:app:
-        aliases:
-          - run
+        platforms: [darwin, linux, windows]
+        aliases: [run]
         desc: "Run app from default install target"
+        dir: .install/app/bin
         cmds:
-            - cmd: ./.install/app/bin/app.exe
+            - cmd: ./app.exe
               platforms: [windows]
-            - cmd: ./.install/app/bin/app
+            - cmd: ./app
               platforms: [linux]
-            - cmd: ./.install/app/Application.app/Contents/MacOS/Application
+            - cmd: "task run:app:darwin"
               platforms: [darwin]
+
+    run:app:darwin:
+        platforms: [darwin]
+        desc: "Run app from default install target"
+        dir: .install/app
+        cmds:
+            - ./Application.app/Contents/MacOS/Application

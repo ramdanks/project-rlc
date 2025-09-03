@@ -5,6 +5,9 @@
 ---Exported module.
 local M = {}
 
+---@type string
+M.name = "entity"
+
 ---@type table<integer, entity_t>
 M.data = {
     {
@@ -14,6 +17,30 @@ M.data = {
     {
         name = "Bird",
         value = 14,
+    },
+    {
+        name = "Cat",
+        value = 1,
+    },
+    {
+        name = "Tiger",
+        value = 51,
+    },
+    {
+        name = "Elephant",
+        value = 32,
+    },
+    {
+        name = "Crocodile",
+        value = 4,
+    },
+    {
+        name = "Dog",
+        value = 11,
+    },
+    {
+        name = "Ant",
+        value = 132,
     },
 }
 

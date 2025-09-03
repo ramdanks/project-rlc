@@ -3,9 +3,15 @@
 
 #include <lua.h>
 
-#define LUA_BIND_OK          (int)0 //Bind Success
-#define LUA_BIND_EINVAL      (int)1 //Error Invalid
-#define LUA_BIND_MALLOC_FAIL (int)2 //Error Invalid
+#include "vector.h"
+
+#define LUA_BIND_OK          (int) 0  // Bind Success
+#define LUA_BIND_EINVAL      (int) 1  // Error Invalid
+#define LUA_BIND_MALLOC_FAIL (int) 2  // Error Invalid
+
+#define lua_bind_fn_string  (lua_bind_fn) lua_bind_string
+#define lua_bind_fn_number  (lua_bind_fn) lua_bind_number
+#define lua_bind_fn_integer (lua_bind_fn) lua_bind_integer
 
 /**
  * @brief Function type for binding a Lua value to a C object.
@@ -18,88 +24,49 @@
  *
  * @return LUA_BIND_OK on success, or an error code on failure.
  */
-typedef int (*lua_bind_fn)(lua_State *L, void* w);
+typedef int (*lua_bind_fn)(lua_State *L, void *w);
 
 /**
  * @brief Arguments for binding a Lua table into a C array.
  */
-typedef struct
-{
-    /**
-     * @brief Element binding callback (must not be NULL).
-     */
+typedef struct {
     lua_bind_fn binding;
+    size_t      elem_size;
+    void      **data;
+    size_t     *size;
+    size_t     *count;
+} lua_bind_vector_t;
 
-    /**
-     * @brief Size of each element in bytes.
-     */
-    size_t elem_size;
-
-    /**
-     * @brief Output: allocated array of bound elements (must not be NULL).
-     */
-    void **data;
-
-    /**
-     * @brief Output: total size of @p data in bytes (must not be NULL).
-     */
-    size_t *data_size;
-
-    /**
-     * @brief Output: number of elements in @p data (must not be NULL).
-     */
-    size_t *data_count;
-} lua_bind_array_t;
-
-typedef struct
-{
-    void*  data;
-    size_t data_size;
-    size_t data_count;
-} lua_bind_array_storage_t;
-
-typedef struct
-{
-    const char* key;
-    void*       buf;
+typedef struct {
+    const char *key;
+    void       *buf;
     lua_bind_fn binding;
 } lua_bind_scalar_field_t;
 
-typedef struct
-{
-    const char*               key;
-    lua_bind_array_storage_t* buf;
-    lua_bind_fn               binding;
-    size_t                    size;
-} lua_bind_array_field_t;
+typedef struct {
+    const char           *key;
+    lua_vector_storage_t *buf;
+    lua_bind_fn           binding;
+    size_t                size;
+} lua_bind_vector_field_t;
 
-typedef struct
-{
-    size_t s_count;
-    size_t a_count;
-    lua_bind_scalar_field_t *s_fields;
-    lua_bind_array_field_t  *a_fields;
+typedef struct {
+    const size_t                   count;
+    const lua_bind_scalar_field_t *fields;
+} lua_bind_scalar_field_arg_t;
+
+typedef struct {
+    const size_t                   count;
+    const lua_bind_vector_field_t *fields;
+} lua_bind_vector_field_arg_t;
+
+typedef struct {
+    lua_bind_scalar_field_arg_t scalar;
+    lua_bind_vector_field_arg_t vector;
 } lua_bind_class_t;
 
 /**
- * @brief Arguments for binding a Lua table into a C array.
- */
-typedef struct
-{
-    const char *name;
-    int value;
-} lua_entity_t;
-
-/**
- * @brief Arguments for binding a Lua table into a C array.
- */
-typedef struct
-{
-    lua_bind_array_storage_t data;
-} lua_module_entity_t;
-
-/**
- * @brief Bind a Lua table to a C struct array.
+ * @brief Bind a Lua homogenous table to a C struct array.
  *
  * Reads a Lua table and allocates a C array for binding.
  * The results are written into the fields of @p arg.
@@ -112,20 +79,26 @@ typedef struct
  * @retval LUA_BIND_EINVAL      Invalid Lua types.
  * @retval LUA_BIND_MALLOC_FAIL Memory allocation failure.
  */
-int lua_bind_array(lua_State *L, lua_bind_array_t arg);
+int lua_bind_vector(lua_State *L, lua_bind_vector_t arg);
 
+/**
+ * @brief Bind a Lua table to a C scalar value or array.
+ */
 int lua_bind_class(lua_State *L, lua_bind_class_t arg);
 
-int lua_bind_string(lua_State *L, const char** w);
+/**
+ * @brief Bind a Lua string to C string.
+ */
+int lua_bind_string(lua_State *L, const char **w);
 
-int lua_bind_integer(lua_State *L, int* w);
+/**
+ * @brief Bind a Lua number to a C double.
+ */
+int lua_bind_number(lua_State *L, double *w);
 
-int lua_bind_entity(lua_State *L, lua_entity_t *w);
-
-int lua_bind_module_entity(lua_State *L, lua_module_entity_t *w);
-
-void lua_free_array_storage(lua_bind_array_storage_t* s);
-
-void lua_free_module_entity(lua_module_entity_t *w);
+/**
+ * @brief Bind a Lua integer to a C int.
+ */
+int lua_bind_integer(lua_State *L, int *w);
 
 #endif

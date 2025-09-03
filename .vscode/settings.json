@@ -1,36 +1,24 @@
 {
-  "editor.rulers": [80],
-  "files.associations": {
-    "raylib.h": "c",
-    "*.m": "c",
-    "lua.h": "c",
-    "luajit.h": "c",
-    "luaconf.h": "c",
-    "lauxlib.h": "c",
-    "lualib.h": "c",
-    "binding.h": "c",
-    "script.h": "c",
-    "vector": "c",
-    "xstring": "c",
-    "xutility": "c",
-    "memory.h": "c",
-    "corecrt_memory.h": "c",
-    "stdlib.h": "c",
-    "corecrt_wstdlib.h": "c",
-    "limits.h": "c",
-    "list.h": "c",
-    "content.h": "c",
-    "algorithm": "c",
-    "xmemory": "c",
-    "optional": "c",
-    "type_traits": "c",
-    "xtr1common": "c"
-  },
-  "Lua.runtime.version": "LuaJIT",
-  "Lua.workspace.checkThirdParty": false,
-  "Lua.workspace.library": [
-      "${workspaceFolder}/content/script"
-  ],
-  "editor.inlineSuggest.enabled": true,
-  "editor.suggest.showInlineDetails": true
+    "editor.inlineSuggest.enabled": true,
+    "editor.suggest.showInlineDetails": true,
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+        80
+    ],
+    "C_Cpp.clang_format_fallbackStyle": "None",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.intelliSenseEngine": "disabled",
+    "[json]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4,
+        "editor.detectIndentation": false
+    },
+    "files.associations": {
+        "*.h": "c"
+    },
+    "Lua.runtime.version": "LuaJIT",
+    "Lua.workspace.checkThirdParty": false,
+    "Lua.workspace.library": [
+        "${workspaceFolder}/content/script"
+    ]
 }

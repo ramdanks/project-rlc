@@ -1,33 +1,36 @@
 #include "binding.h"
 
-#include <stdlib.h>
-#include <lualib.h>
 #include <lauxlib.h>
+#include <lualib.h>
+#include <stdlib.h>
 
-int lua_bind_array(lua_State *L, lua_bind_array_t arg)
+#include "truncate.h"
+
+int lua_bind_vector(lua_State* L, lua_bind_vector_t arg)
 {
     const int index = -1;
-    
+
     if (!lua_istable(L, index))
         return LUA_BIND_EINVAL;
 
-    const size_t n  = lua_objlen(L, index);
-    *arg.data       = NULL;
-    *arg.data_count = n;
-    *arg.data_size  = n * arg.elem_size;
+    const size_t n = lua_objlen(L, index);
+    *arg.data      = NULL;
+    *arg.count     = n;
+    *arg.size      = n * arg.elem_size;
 
     if (n == 0)
         return LUA_BIND_OK;
 
-    *arg.data = malloc(*arg.data_size);
+    *arg.data = malloc(*arg.size);
     if (*arg.data == NULL)
         return LUA_BIND_MALLOC_FAIL;
-    
-    char *w    = (char*)(*arg.data);
-    char *wend = w + *arg.data_size;
 
-    for (size_t i = 1; w < wend; w += arg.elem_size, i++) {
-        lua_rawgeti(L, index, (int)i);
+    char* w    = (char*) (*arg.data);
+    char* wend = w + *arg.size;
+
+    for (int i = 1; w < wend; w += arg.elem_size, i++)
+    {
+        lua_rawgeti(L, index, i);
         arg.binding(L, w);
         lua_pop(L, 1);
     }
@@ -35,99 +38,66 @@ int lua_bind_array(lua_State *L, lua_bind_array_t arg)
     return LUA_BIND_OK;
 }
 
-int lua_bind_class(lua_State *L, lua_bind_class_t arg)
+int lua_bind_class(lua_State* L, lua_bind_class_t arg)
 {
     const int index = -1;
-    
+
     if (!lua_istable(L, index))
         return LUA_BIND_EINVAL;
 
-    lua_gettable(L, index);
-
-    // bind class scalar
-    for (size_t i = 0; i < arg.s_count; ++i)
+    for (size_t i = 0; i < arg.scalar.count; ++i)
     {
-        const lua_bind_scalar_field_t f = arg.s_fields[i];
-        lua_getfield(L, -1, f.key);
-        f.binding(L, f.buf);
+        const char* key = arg.scalar.fields[i].key;
+        void*       buf = arg.scalar.fields[i].buf;
+        bind_fn     bfn = arg.scalar.fields[i].binding;
+
+        lua_getfield(L, -1, key);
+        bfn(L, buf);
         lua_pop(L, 1);
     }
 
-    // bind class array
-    for (size_t i = 0; i < arg.a_count; ++i)
+    for (size_t i = 0; i < arg.vector.count; ++i)
     {
-        const lua_bind_array_field_t f = arg.a_fields[i];
-        const lua_bind_array_t arg = {
-            .binding    = f.binding,
-            .elem_size  = f.size,
-            .data       = &f.buf->data,
-            .data_count = &f.buf->data_count,
-            .data_size  = &f.buf->data_size,
+        const vector_field_t f   = arg.vector.fields[i];
+        const vector_t       arg = {
+                  .binding   = f.binding,
+                  .elem_size = f.size,
+                  .data      = &f.buf->data,
+                  .count     = &f.buf->count,
+                  .size      = &f.buf->size,
         };
+
         lua_getfield(L, -1, f.key);
-        lua_bind_array(L, arg);
+        lua_bind_vector(L, arg);
         lua_pop(L, 1);
     }
-    
+
     return LUA_BIND_OK;
 }
 
-int lua_bind_string(lua_State *L, const char **w)
+int lua_bind_string(lua_State* L, const char** w)
 {
     if (!lua_isstring(L, -1))
         return LUA_BIND_EINVAL;
-    
+
     *w = lua_tostring(L, -1);
     return LUA_BIND_OK;
 }
 
-int lua_bind_integer(lua_State *L, int *w)
+int lua_bind_number(lua_State* L, double* w)
 {
     if (!lua_isnumber(L, -1))
         return LUA_BIND_EINVAL;
-    
-    *w = lua_tointeger(L, -1);
+
+    *w = lua_tonumber(L, -1);
     return LUA_BIND_OK;
 }
 
-int lua_bind_entity(lua_State *L, lua_entity_t *w)
+int lua_bind_integer(lua_State* L, int* w)
 {
-    enum { a_count = 0, s_count = 2 };
-    const lua_bind_class_t arg = {
-        .a_count = a_count,
-        .s_count = s_count,
-        .a_fields = NULL,
-        .s_fields = (lua_bind_scalar_field_t[s_count]){
-            {"name" , &w->name , (lua_bind_fn)lua_bind_string },
-            {"value", &w->value, (lua_bind_fn)lua_bind_integer},
-        },
-    };
-    return lua_bind_class(L, arg);
-}
+    if (!lua_isnumber(L, -1))
+        return LUA_BIND_EINVAL;
 
-int lua_bind_module_entity(lua_State *L, lua_module_entity_t *w)
-{
-    enum { a_count = 1, s_count = 0 };
-    const lua_bind_class_t arg = {
-        .a_count = a_count,
-        .s_count = s_count,
-        .a_fields = (lua_bind_array_field_t[a_count]){
-            {"data", &w->data, (lua_bind_fn)lua_bind_entity, sizeof(lua_entity_t)},
-        },
-        .s_fields = NULL,
-    };
-    return lua_bind_class(L, arg);
-}
-
-void lua_free_array_storage(lua_bind_array_storage_t *s)
-{
-    free(s->data);
-    s->data       = NULL;
-    s->data_count = 0;
-    s->data_size  = 0;
-}
-
-void lua_free_module_entity(lua_module_entity_t *w)
-{
-    lua_free_array_storage(&w->data);
+    *w = lua_tointeger(L, -1);
+    return LUA_BIND_OK;
 }

@@ -11,7 +11,7 @@
             "processId": "${command:pickProcess}",
         },
         {
-            "name": "Debug Launch",
+            "name": "Debug Launch: Windows",
             "type": "cppvsdbg",
             "request": "launch",
             "cwd": "${workspaceRoot}/.install/app/bin",

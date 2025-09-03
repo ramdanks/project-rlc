@@ -1,13 +1,13 @@
 #include "script.h"
 
+#include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
-#include <lauxlib.h>
 
 #include "content.h"
-#include "lua/binding.h"
+#include "script/entity.h"
 
-int script_new_state(script_state_t *s)
+int script_new_state(script_state_t* s)
 {
     s->L = luaL_newstate();
     if (s->L == NULL)
@@ -17,21 +17,26 @@ int script_new_state(script_state_t *s)
     return 0;
 }
 
-void script_load_entity(script_state_t *s)
+void script_load_entity(script_state_t* s)
 {
     if (luaL_dofile(s->L, SCRIPT_ENTITY_PATH))
     {
-        const char *msg = lua_tostring(s->L, -1);
+        const char* msg = lua_tostring(s->L, -1);
         fprintf(stderr, "Failed to load entity: %s\n", msg);
         return;
     }
 
-    lua_module_entity_t e;
-    lua_bind_module_entity(s->L, &e);
-    lua_free_module_entity(&e);
+    script_module_entity_t m;
+    script_bind_module_entity(s->L, &m);
+
+    lua_iterator_t it = lua_vector_iterator(&m.data);
+    for (script_entity_t* e; lua_iterator_next(&it, &e);)
+        fprintf(stdout, "%s: %d\n", e->name, e->value);
+
+    script_free_module_entity(&m);
 }
 
-void script_free_state(script_state_t *s)
+void script_free_state(script_state_t* s)
 {
     lua_close(s->L);
     s->L = NULL;

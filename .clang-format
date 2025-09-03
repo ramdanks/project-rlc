@@ -1,0 +1,41 @@
+BasedOnStyle: Google
+
+LineEnding: LF
+ColumnLimit: 80
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterEnum: false
+  AfterStruct: false
+  AfterFunction: true
+  AfterCaseLabel: true
+  AfterControlStatement: Always
+  SplitEmptyRecord: false
+
+AlignArrayOfStructures: Left
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+
+PointerAlignment: Left
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: true
+
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: true
