@@ -21,7 +21,6 @@ typedef void (*bind_fn)(lua_State* L, int idx, bind_ext_t* w);
 typedef struct {
     lua_State* L;
     int        idx;
-    int        top;
 } bind_t;
 
 typedef struct {
@@ -62,12 +61,12 @@ void _bind_vec(lua_State* L, int idx, bind_vec_t* buf, P_DESCRIPTOR);
 
 inline bind_t bind_begin(lua_State* L, int idx)
 {
-    return (bind_t) {L, idx, -1};
+    return (bind_t) {L, idx};
 }
 inline void bind_reset(bind_t* self)
 {
-    lua_settop(self->L, self->top);
-    self->top = -1;
+    lua_settop(self->L, self->idx);
+    self->idx = -1;
 }
 
 inline void bind_str(lua_State* L, int idx, bind_str_t* buf)
@@ -97,31 +96,31 @@ inline void bind_vec(lua_State* L, int idx, bind_vec_t* buf, P_DESCRIPTOR)
 
 inline void bind_str_f(bind_t* agg, cstr_t key, bind_str_t* buf)
 {
-    BINDF(agg->L, agg->top, key, buf, bind_str);
+    BINDF(agg->L, agg->idx, key, buf, bind_str);
 }
 inline void bind_num_f(bind_t* agg, cstr_t key, bind_num_t* buf)
 {
-    BINDF(agg->L, agg->top, key, buf, bind_num);
+    BINDF(agg->L, agg->idx, key, buf, bind_num);
 }
 inline void bind_int_f(bind_t* agg, cstr_t key, bind_int_t* buf)
 {
-    BINDF(agg->L, agg->top, key, buf, bind_int);
+    BINDF(agg->L, agg->idx, key, buf, bind_int);
 }
 inline void bind_fun_f(bind_t* agg, cstr_t key, bind_fun_t* buf)
 {
-    BINDF(agg->L, agg->top, key, buf, bind_fun);
+    BINDF(agg->L, agg->idx, key, buf, bind_fun);
 }
 inline void bind_ext_f(bind_t* agg, cstr_t key, bind_ext_t* buf, P_DESCRIPTOR)
 {
-    lua_getfield(agg->L, agg->top, key);
+    lua_getfield(agg->L, agg->idx, key);
     bind_ext(agg->L, -1, buf, des);
-    agg->top--;
+    agg->idx--;
 }
 inline void bind_vec_f(bind_t* agg, cstr_t key, bind_vec_t* buf, P_DESCRIPTOR)
 {
-    lua_getfield(agg->L, agg->top, key);
+    lua_getfield(agg->L, agg->idx, key);
     bind_vec(agg->L, -1, buf, des);
-    agg->top--;
+    agg->idx--;
 }
 
 // End inline function definition.
