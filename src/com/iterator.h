@@ -1,5 +1,5 @@
-#ifndef ITERATOR_H
-#define ITERATOR_H
+#ifndef COM_ITERATOR_H
+#define COM_ITERATOR_H
 
 #include <stdbool.h>
 
@@ -9,24 +9,26 @@
 /**
  * @brief Iterator for loop condition and element retrieval.
  */
-typedef bool (*iterator_fn)(void* self, void** w);
-
 /**
  * @brief Holds state to your iterator.
  */
+/**
+ * @brief Holds state to your range iterator.
+ */
+typedef bool (*iterator_fn)(void* self, void** w);
+
 typedef struct {
     void*       self;
     iterator_fn next;
 } iterator_t;
 
-/**
- * @brief Holds state to your range iterator.
- */
 typedef struct {
     void*       cursor;
     const void* endpos;
     size_t      step;
 } iterator_range_t;
+
+// Begin inline function definition.
 
 /**
  * @brief Holds state to your iterator.
@@ -57,4 +59,6 @@ inline iterator_t make_iterator_range(iterator_range_t* it)
     };
 }
 
-#endif
+// End inline function definition.
+
+#endif // COM_ITERATOR_H

@@ -2,9 +2,9 @@
 #define CONTENT_H
 
 #ifdef _WIN32
-#define PATH_SEP "\\"
+    #define PATH_SEP "\\"
 #else
-#define PATH_SEP "/"
+    #define PATH_SEP "/"
 #endif
 
 // Filepath join concatenate args with path separator.

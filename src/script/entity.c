@@ -1,36 +1,33 @@
 #include "entity.h"
+#include "binding.h"
+#include "lua.h"
 
-#include "truncate.h"
+const bind_descriptor_t entity_bd = {
+    .bind = script_bind_entity,
+    .size = sizeof(script_entity_t),
+};
 
-#define bind_entity (lua_bind_fn) script_bind_entity
-
-int script_bind_entity(lua_State* L, script_entity_t* w)
+void script_bind_entity(lua_State* L, int idx, void* w)
 {
-    enum { scalar_count = 2, vector_count = 0 };
-    const bind_scalar_field_t scalar_fields[scalar_count] = {
-        {"name",  &w->name,  bind_string },
-        {"value", &w->value, bind_integer},
-    };
-    const bind_class_scalar_t scalar = {scalar_count, scalar_fields};
-    const bind_class_vector_t vector = {vector_count, NULL};
-    return lua_bind_class(L, (bind_class_t) {scalar, vector});
+    script_entity_t* self = w;
+
+    bind_t bind = bind_begin(L, idx);
+    bind_str_f(&bind, "name", &self->name);
+    bind_int_f(&bind, "value", &self->value);
+    bind_reset(&bind);
 }
 
-int script_bind_module_entity(lua_State* L, script_module_entity_t* w)
+void script_bind_module_entity(lua_State* L, int idx, void* w)
 {
-    enum { scalar_count = 1, vector_count = 1 };
-    const bind_scalar_field_t scalar_fields[scalar_count] = {
-        {"name", &w->name, bind_string},
-    };
-    const bind_vector_field_t vector_fields[vector_count] = {
-        {"data", &w->data, bind_entity, sizeof(script_entity_t)},
-    };
-    const bind_class_scalar_t scalar = {scalar_count, scalar_fields};
-    const bind_class_vector_t vector = {vector_count, vector_fields};
-    return lua_bind_class(L, (bind_class_t) {scalar, vector});
+    script_module_entity_t* self = w;
+
+    bind_t bind = bind_begin(L, idx);
+    bind_str_f(&bind, "name", &self->name);
+    bind_vec_f(&bind, "data", &self->data, &entity_bd);
+    bind_reset(&bind);
 }
 
 void script_free_module_entity(script_module_entity_t* w)
 {
-    lua_free_vector(&w->data);
+    free_vector(&w->data);
 }

@@ -64,19 +64,20 @@ elseif(WIN32)
     find_library(RAYLIB_LIB raylib PATHS ${RAYLIB_DIR}/lib NO_DEFAULT_PATH)
     find_library(LUAJIT_LIB lua51  PATHS ${LUAJIT_DIR}/lib NO_DEFAULT_PATH)
 
-    target_link_libraries(app PRIVATE ${RAYLIB_LIB} ${LUAJIT_LIB})
-
     install(TARGETS app RUNTIME DESTINATION bin)
     install(FILES "${RAYLIB_DIR}/bin/raylib.dll" DESTINATION bin)
     install(FILES "${LUAJIT_DIR}/bin/lua51.dll"  DESTINATION bin)
     install(DIRECTORY content/ DESTINATION content)
+
+    install(FILES "$<TARGET_PDB_FILE:app>" DESTINATION bin OPTIONAL)
 
 else()
     message(FATAL_ERROR "Not supported on this platform.")
 
 endif()
 
-# Dependencies include directories.
+# Linking libraries and include directories. 
+target_link_libraries(app PRIVATE ${RAYLIB_LIB} ${LUAJIT_LIB})
 target_include_directories(app PRIVATE
     ${CMAKE_SOURCE_DIR}/src
     ${RAYLIB_DIR}/include
@@ -84,9 +85,7 @@ target_include_directories(app PRIVATE
 )
 
 # Compiler specific options.
-if(MSVC)
+if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     add_compile_options(/MP)
     add_compile_options(/W4 /permissive-)
-
-    install(FILES "$<TARGET_PDB_FILE:app>" DESTINATION bin CONFIGURATIONS Debug)
 endif()

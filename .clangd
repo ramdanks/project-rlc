@@ -1,2 +1,5 @@
 CompileFlags:
   CompilationDatabase: .build/app
+#NOTE: Upcoming Release for LLVM 22.
+#Documentation:
+#CommentFormat: Doxygen

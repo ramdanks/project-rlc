@@ -1,0 +1,69 @@
+/**
+ * @file src/binding.h
+ * A brief file description.
+ * A more elaborated file description.
+ *
+ */
+
+/**
+ * @fn inline void bind_object_stack
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn inline void bind_vector_stack
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn inline void bind_object_field
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn inline void bind_vector_field
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn void _bind_str
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn void _bind_num
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn void _bind_int
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn void _bind_fun
+ *
+ * @brief
+ *
+ */
+
+/**
+ * @fn void _bind_vec
+ *
+ * @brief
+ *
+ */

@@ -19,8 +19,12 @@ tasks:
     build:app:
         aliases: [build]
         desc: "Build and install this project"
+        vars:
+            BUILD_TYPE: '{{.BUILD_TYPE | default "Debug"}}'
         cmds:
-            - cmake --build {{.CMAKE_APP_BD}} --target install
+            - cmake --build {{.CMAKE_APP_BD}}
+              --config {{.BUILD_TYPE}}
+              --target install
 
     build:luajit:
         desc: "Build and install LuaJIT dependencies"
@@ -60,8 +64,12 @@ tasks:
 
     build:raylib:
         desc: "Build and install Raylib dependencies"
+        vars:
+            BUILD_TYPE: '{{.BUILD_TYPE | default "Release"}}'
         cmds:
-            - cmake --build {{.CMAKE_RAYLIB_BD}} --target install
+            - cmake --build {{.CMAKE_RAYLIB_BD}}
+              --config {{.BUILD_TYPE}}
+              --target install
 
     clean:app:
         aliases: [clean]
@@ -110,7 +118,7 @@ tasks:
         cmds:
             - cmd: rm -rf .build .install
               platforms: [darwin, linux]
-            - cmd: cmd /C "exit 0 &&
+            - cmd: cmd /C "echo &&
                   if exist .build   rmdir /S /Q .build &&
                   if exist .install rmdir /S /Q .install"
               platforms: [windows]
@@ -123,30 +131,31 @@ tasks:
             - task configure:app
             - task build:app
 
-    configure:app:auto:
+    configure:app:
         aliases:
-            - configure:app
+            - configure
         desc: "Configure CMake this project"
+        vars:
+            BUILD_TYPE: '{{.BUILD_TYPE | default "Debug"}}'
+            GENERATOR: '{{.GENERATOR | default ""}}'
         cmds:
             - cmake
+              {{if .GENERATOR}}-G "{{.GENERATOR}}"{{end}}
               -B {{.CMAKE_APP_BD}}
               -S .
-              -DCMAKE_INSTALL_PREFIX={{.APP_IP}}
-
-    configure:app:ninja:
-        desc: "Configure CMake this project"
-        cmds:
-            - cmake
-              -G "Ninja"
-              -B {{.CMAKE_APP_BD}}
-              -S .
+              -DCMAKE_BUILD_TYPE={{.BUILD_TYPE}}
               -DCMAKE_INSTALL_PREFIX={{.APP_IP}}
               -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
     configure:raylib:
         desc: "Configure CMake for Raylib dependency"
+        vars:
+            BUILD_TYPE: '{{.BUILD_TYPE | default "Release"}}'
         cmds:
-            - cmake -B {{.CMAKE_RAYLIB_BD}} -S {{.RAYLIB_DD}}
+            - cmake
+              -B {{.CMAKE_RAYLIB_BD}}
+              -S {{.RAYLIB_DD}}
+              -DCMAKE_BUILD_TYPE={{.BUILD_TYPE}}
               -DCMAKE_INSTALL_PREFIX={{.RAYLIB_IP}}
               -DBUILD_SHARED_LIBS=ON
               -DBUILD_EXAMPLES=OFF

@@ -3,9 +3,9 @@
 #include <lauxlib.h>
 #include <lua.h>
 #include <lualib.h>
+#include <stdio.h>
 
 #include "content.h"
-#include "lua/vector.h"
 #include "script/entity.h"
 
 int script_new_state(script_state_t* s)
@@ -28,13 +28,7 @@ void script_load_entity(script_state_t* s)
     }
 
     script_module_entity_t m;
-    script_bind_module_entity(s->L, &m);
-    for (size_t i = 0; i < m.data.count; ++i)
-    {
-        script_entity_t* e = lua_vector_read(&m.data, i);
-        fprintf(stdout, "%s: %d\n", e->name, e->value);
-    }
-
+    script_bind_module_entity(s->L, -1, &m);
     script_free_module_entity(&m);
 }
 
